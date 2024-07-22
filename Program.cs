@@ -19,17 +19,17 @@ namespace Program {
             Console.SetWindowSize(22, 23);
             Console.SetBufferSize(22, 23);
 
-            Dictionary<string, Shape> shapes = new Dictionary<string, Shape>();
+            Dictionary<char, Shape> shapes = new Dictionary<char, Shape>();
 
             #region Shapes
-                shapes.Add("O", new Shape([
+                shapes.Add('O', new Shape([
                         [ new(0, 0), new(1, 0), new(0, -1), new(1, -1) ],
                         [ new(0, 0), new(1, 0), new(0, -1), new(1, -1) ],
                         [ new(0, 0), new(1, 0), new(0, -1), new(1, -1) ],
                         [ new(0, 0), new(1, 0), new(0, -1), new(1, -1) ]
                     ], ConsoleColor.Yellow
                 ));
-                shapes.Add("I", new Shape([
+                shapes.Add('I', new Shape([
                         [ new(1, 0), new(1, -1), new(1, -2), new(1, -3) ],
                         [ new(-2, -1), new(-1, -1), new(0, -1), new(1, -1) ],
                         [ new(0, 0), new(0, -1), new(0, -2), new(0, -1) ],
@@ -38,12 +38,13 @@ namespace Program {
                 ));
             #endregion
 
-            Piece piece = new Piece(shapes["I"]);
-            piece.UpdatePos(new Vector2(4, 0));
-
             List<Block> placed = new List<Block>();
-
+            Piece piece = new Piece(shapes['I'], placed);
             Stopwatch watch = new Stopwatch();
+            Random rand = new Random();
+            bool drop = false;
+
+            piece.UpdatePos(new Vector2(4, 0));
             watch.Start();
 
             while(key != ConsoleKey.Escape) {
@@ -52,35 +53,46 @@ namespace Program {
                 Thread inputThread = new Thread(Input);
                 inputThread.Start();
 
-                switch(key) {
+                
+                if (!drop) switch(key) {
+                    case ConsoleKey.Spacebar:
+                        watch.Reset();
+                        drop = true;
+                        break;
+
                     case ConsoleKey.DownArrow:
                         if (piece.blocks[piece.rotation].Any(block => block.pos.Y == 19)) break;
-                        piece.UpdatePos(new Vector2(0, 1));
+                        if (piece.UpdatePos(new Vector2(0, 1))) piece.UpdatePos(new Vector2(0, -1));
                         watch.Restart();
                         break;
                         
                     case ConsoleKey.LeftArrow:
                         if (piece.blocks[piece.rotation].Any(block => block.pos.X == 0)) break;
-                        piece.UpdatePos(new Vector2(-1, 0));
+                        if (piece.UpdatePos(new Vector2(-1, 0))) piece.UpdatePos(new Vector2(1, 0));
                         break;
                         
                     case ConsoleKey.RightArrow:
                         if (piece.blocks[piece.rotation].Any(block => block.pos.X == 9)) break;
-                        piece.UpdatePos(new Vector2(1, 0));
+                        if (piece.UpdatePos(new Vector2(1, 0))) piece.UpdatePos(new Vector2(-1, 0));
                         break;
                 }
                 key = ConsoleKey.None;
 
                 // Drop piece
-                if (watch.Elapsed.Seconds >= 1) {
+                if (drop || watch.Elapsed.Seconds >= 1) {
+                    do {
+                        if (piece.UpdatePos(new Vector2(0, 1)) ||
+                        piece.blocks[piece.rotation].Any(b => b.pos.Y == 20)) {
+                            piece.UpdatePos(new Vector2(0, -1));
+                            drop = false;
+                            foreach(Block block in piece.blocks[piece.rotation])
+                                placed.Add(block);
+                            piece = new Piece(shapes.ElementAt(rand.Next(0, shapes.Count)).Value, placed);
+                            piece.UpdatePos(new Vector2(4, 0));
+                        }
+                    } while(drop);
+
                     watch.Restart();
-                    if (piece.blocks[piece.rotation].Any(block => block.pos.Y == 19)) {
-                        foreach(Block block in piece.blocks[piece.rotation])
-                            placed.Add(block);
-                        piece = new Piece(shapes["I"]);
-                        piece.UpdatePos(new Vector2(4, 0));
-                    }
-                    else piece.UpdatePos(new Vector2(0, 1));
                 }
 
                 // Draw
@@ -94,22 +106,15 @@ namespace Program {
             // Draw frame
             Console.ForegroundColor = ConsoleColor.White;
             Console.SetCursorPosition(0, 0);
-            Console.Write('╔');
-            for(int i = 0; i < Console.WindowWidth-2; i++)
-                Console.Write('═');
-            Console.Write('╗');
-
-            for(int i = 1; i < Console.WindowWidth-1; i++) {
+            Console.Write("╔════════════════════╗");
+            for(int i = 1; i <= 20; i++) {
                 Console.Write('║');
                 Console.SetCursorPosition(Console.WindowWidth-1, i);
                 Console.Write('║');
             }
+            Console.Write("╚════════════════════╝");
             
-            Console.Write('╚');
-            for(int i = 0; i < Console.WindowWidth-2; i++)
-                Console.Write('═');
-            Console.Write('╝');
-            
+            // Render game components
             piece.Draw();
             foreach(Block block in placed)
                 block.Draw();
@@ -130,8 +135,11 @@ namespace Program {
         // Create a copy of the jagged arr
         public Block[][] blocks = new Block[4][];
         public int rotation = 0;
+        private List<Block> placed;
 
-        public Piece(Shape shape) {
+        public Piece(Shape shape, List<Block> _placed) {
+            placed = _placed;
+
             for(int i = 0; i < 4; i++) {
                 blocks[i] = new Block[shape.placements[0].Length];
                 for(int j = 0; j < shape.placements[0].Length; j++)
@@ -144,9 +152,14 @@ namespace Program {
                 block.Draw();
         }
 
-        public void UpdatePos(Vector2 offset) {
-            foreach(Block block in blocks[rotation])
+        public bool UpdatePos(Vector2 offset) {
+            bool collided = false;
+            foreach(Block block in blocks[rotation]) {
                 block.pos += offset;
+                if (!collided && placed.Any(p => p.pos.Equals(block.pos)))
+                    collided = true;
+            }
+            return collided;
         }
     }
 
