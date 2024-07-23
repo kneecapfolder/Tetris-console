@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO.Pipes;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Security.Authentication.ExtendedProtection;
@@ -22,6 +23,27 @@ namespace Program {
             Dictionary<char, Shape> shapes = new Dictionary<char, Shape>();
 
             #region Shapes
+                shapes.Add('I', new Shape([
+                        [ new(1, 0), new(1, -1), new(1, -2), new(1, -3) ],
+                        [ new(-1, -1), new(0, -1), new(1, -1), new(2, -1) ],
+                        [ new(0, 0), new(0, -1), new(0, -2), new(0, -3) ],
+                        [ new(-1, -2), new(0, -2), new(1, -2), new(2, -2) ]
+                    ], ConsoleColor.Cyan
+                ));
+                shapes.Add('J', new Shape([
+                        [ new(-1, 0), new(0, 0), new(0, -1), new(0, -2) ],
+                        [ new(-1, -2), new(-1, -1), new(0, -1), new(1, -1) ],
+                        [ new(0, 0), new(0, -1), new(0, -2), new(1, -2) ],
+                        [ new(-1, -1), new(0, -1), new(1, -1), new(1, 0) ]
+                    ], ConsoleColor.Blue
+                ));
+                shapes.Add('L', new Shape([
+                        [ new(1, 0), new(0, 0), new(0, -1), new(0, -2) ],
+                        [ new(-1, 0), new(-1, -1), new(0, -1), new(1, -1) ],
+                        [ new(0, 0), new(0, -1), new(0, -2), new(-1, -2) ],
+                        [ new(-1, -1), new(0, -1), new(1, -1), new(1, -2) ]
+                    ], ConsoleColor.DarkYellow
+                ));
                 shapes.Add('O', new Shape([
                         [ new(0, 0), new(1, 0), new(0, -1), new(1, -1) ],
                         [ new(0, 0), new(1, 0), new(0, -1), new(1, -1) ],
@@ -29,17 +51,24 @@ namespace Program {
                         [ new(0, 0), new(1, 0), new(0, -1), new(1, -1) ]
                     ], ConsoleColor.Yellow
                 ));
-                shapes.Add('I', new Shape([
-                        [ new(1, 0), new(1, -1), new(1, -2), new(1, -3) ],
-                        [ new(-2, -1), new(-1, -1), new(0, -1), new(1, -1) ],
-                        [ new(0, 0), new(0, -1), new(0, -2), new(0, -1) ],
-                        [ new(-1, -2), new(0, -2), new(1, -2), new(2, -2) ]
-                    ], ConsoleColor.Cyan
+                shapes.Add('S', new Shape([
+                        [ new(-1, 0), new(0, 0), new(0, -1), new(1, -1) ],
+                        [ new(0, -1), new(0, 0), new(1, 0), new(1, 1) ],
+                        [ new(-1, 1), new(0, 1), new(0, 0), new(1, 0) ],
+                        [ new(0, 1), new(0, 0), new(-1, 0), new(-1, -1) ]
+                    ], ConsoleColor.Green
+                ));
+                shapes.Add('Z', new Shape([
+                        [ new(1, 0), new(0, 0), new(0, -1), new(-1, -1) ],
+                        [ new(1, -1), new(0, 0), new(1, 0), new(0, 1) ],
+                        [ new(-1, 0), new(0, 1), new(0, 0), new(1, 1) ],
+                        [ new(-1, 1), new(0, 0), new(-1, 0), new(0, -1) ]
+                    ], ConsoleColor.Red
                 ));
             #endregion
 
             List<Block> placed = new List<Block>();
-            Piece piece = new Piece(shapes['I'], placed);
+            Piece piece = new Piece(shapes['Z'], placed);
             Stopwatch watch = new Stopwatch();
             Random rand = new Random();
             bool drop = false;
@@ -58,6 +87,14 @@ namespace Program {
                     case ConsoleKey.Spacebar:
                         watch.Reset();
                         drop = true;
+                        break;
+
+                    case ConsoleKey.A:
+                        piece.Rotate(-1);
+                        break;
+
+                    case ConsoleKey.D:
+                        piece.Rotate(1);
                         break;
 
                     case ConsoleKey.DownArrow:
@@ -152,13 +189,24 @@ namespace Program {
                 block.Draw();
         }
 
+        public void Rotate(int rot) {
+            rotation += rot;
+            rotation = rotation < 0? 3: rotation > 3? 0: rotation;
+
+            foreach(Block block in blocks[rotation])
+                if (block.pos.Y <= 19 && block.pos.X >= 0 && block.pos.X <= 9 && !placed.Any(p => p.pos.Equals(block.pos))) return;
+
+            Rotate(-rot);
+        }
+
         public bool UpdatePos(Vector2 offset) {
             bool collided = false;
-            foreach(Block block in blocks[rotation]) {
-                block.pos += offset;
-                if (!collided && placed.Any(p => p.pos.Equals(block.pos)))
-                    collided = true;
-            }
+            for (int i = 0; i < 4; i++)
+                foreach(Block block in blocks[i]) {
+                    block.pos += offset;
+                    if (i == rotation && !collided && placed.Any(p => p.pos.Equals(block.pos)))
+                        collided = true;
+                }
             return collided;
         }
     }
