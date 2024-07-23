@@ -3,17 +3,18 @@ using System.Numerics;
 
 namespace Program {
     class Game {
+        static Dictionary<char, Shape> shapes = new Dictionary<char, Shape>();
         static ConsoleKey key;
         static List<Block> placed;
+        static Shape next;
         static Piece piece;
+        static int score = 0;
 
         public static void Main(string[] args) {
             // Setup external terminal
             Console.Title = "Tetris";
-            Console.SetWindowSize(22, 23);
-            Console.SetBufferSize(22, 23);
-
-            Dictionary<char, Shape> shapes = new Dictionary<char, Shape>();
+            Console.SetWindowSize(22, 24);
+            Console.SetBufferSize(22, 24);
 
             #region Shapes
                 shapes.Add('I', new Shape([
@@ -68,9 +69,10 @@ namespace Program {
             #endregion
 
             placed = new List<Block>();
-            piece = new Piece(shapes['T'], placed);
-            Stopwatch watch = new Stopwatch();
             Random rand = new Random();
+            next = shapes.ElementAt(rand.Next(0, shapes.Count)).Value;
+            piece = new Piece(shapes.ElementAt(rand.Next(0, shapes.Count)).Value, placed);
+            Stopwatch watch = new Stopwatch();
             bool drop = false;
 
             piece.UpdatePos(new Vector2(4, 0));
@@ -100,6 +102,7 @@ namespace Program {
                     case ConsoleKey.DownArrow:
                         if (piece.blocks[piece.rotation].Any(block => block.pos.Y == 19)) break;
                         if (piece.UpdatePos(new Vector2(0, 1))) piece.UpdatePos(new Vector2(0, -1));
+                        score++;
                         watch.Restart();
                         break;
                         
@@ -118,13 +121,15 @@ namespace Program {
                 // Drop piece
                 if (drop || watch.Elapsed.Seconds >= 1) {
                     do {
+                        if (drop) score += 2;
                         if (piece.UpdatePos(new Vector2(0, 1)) ||
                         piece.blocks[piece.rotation].Any(b => b.pos.Y == 20)) {
                             piece.UpdatePos(new Vector2(0, -1));
                             drop = false;
                             foreach(Block b in piece.blocks[piece.rotation])
                                 placed.Add(b);
-                            piece = new Piece(shapes.ElementAt(rand.Next(0, shapes.Count)).Value, placed);
+                            piece = new Piece(next, placed);
+                            next = shapes.ElementAt(rand.Next(0, shapes.Count)).Value;
                             piece.UpdatePos(new Vector2(4, 0));
                             Complete();
                         }
@@ -151,7 +156,17 @@ namespace Program {
                 Console.Write('║');
             }
             Console.Write("╚════════════════════╝");
-            
+
+            // Display stats
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write($"score: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(score);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write("next: ");
+            Console.ForegroundColor = next.color;
+            Console.Write(shapes.FirstOrDefault(s => s.Value.Equals(next)).Key);
+
             // Render piece preview
             if (showPreview) {
                 List<Block> preview = new List<Block>();
@@ -172,12 +187,19 @@ namespace Program {
         }
 
         static void Complete() {
+            if (placed.Any(b => b.pos.Y == 0)) {
+                key = ConsoleKey.Escape;
+                return;
+            }
+
             List<int> yValues = new List<int>();
 
             for(int i = 0; i < 20; i++)
                 if (placed.Count(b => b.pos.Y == i) >= 10)
                     yValues.Add(i);
-            if (yValues.Count == 0) return; 
+            if (yValues.Count == 0) return;
+
+            score += new int[]{100, 300, 500, 800}[yValues.Count-1];
             
             List<Block> doomed = new List<Block>();
             foreach(Block b in placed)
