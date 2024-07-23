@@ -6,6 +6,7 @@ using System.IO.Pipes;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Timers;
 using Microsoft.VisualBasic.FileIO;
@@ -13,8 +14,10 @@ using Microsoft.VisualBasic.FileIO;
 namespace Program {
     class Game {
         static ConsoleKey key;
+        static List<Block> placed;
+        static Piece piece;
 
-        static void Main(string[] args) {
+        public static void Main(string[] args) {
             // Setup external terminal
             Console.Title = "Tetris";
             Console.SetWindowSize(22, 23);
@@ -74,8 +77,8 @@ namespace Program {
                 ));
             #endregion
 
-            List<Block> placed = new List<Block>();
-            Piece piece = new Piece(shapes['T'], placed);
+            placed = new List<Block>();
+            piece = new Piece(shapes['T'], placed);
             Stopwatch watch = new Stopwatch();
             Random rand = new Random();
             bool drop = false;
@@ -129,10 +132,11 @@ namespace Program {
                         piece.blocks[piece.rotation].Any(b => b.pos.Y == 20)) {
                             piece.UpdatePos(new Vector2(0, -1));
                             drop = false;
-                            foreach(Block block in piece.blocks[piece.rotation])
-                                placed.Add(block);
+                            foreach(Block b in piece.blocks[piece.rotation])
+                                placed.Add(b);
                             piece = new Piece(shapes.ElementAt(rand.Next(0, shapes.Count)).Value, placed);
                             piece.UpdatePos(new Vector2(4, 0));
+                            Complete();
                         }
                     } while(drop);
 
@@ -140,13 +144,14 @@ namespace Program {
                 }
 
                 // Draw
-                Console.Clear();
-                Draw(piece, placed);
+                Draw();
                 Thread.Sleep(1);
             }
         }
 
-        static void Draw(Piece piece, List<Block> placed) {
+        static void Draw() {
+            Console.Clear();
+            
             // Draw frame
             Console.ForegroundColor = ConsoleColor.White;
             Console.SetCursorPosition(0, 0);
@@ -160,8 +165,35 @@ namespace Program {
             
             // Render game components
             piece.Draw();
-            foreach(Block block in placed)
-                block.Draw();
+            foreach(Block b in placed)
+                b.Draw();
+        }
+
+        static void Complete() {
+            List<int> yValues = new List<int>();
+
+            for(int i = 0; i < 20; i++)
+                if (placed.Count(b => b.pos.Y == i) >= 10)
+                    yValues.Add(i);
+            if (yValues.Count == 0) return; 
+            
+            List<Block> doomed = new List<Block>();
+            foreach(Block b in placed)
+                if (yValues.Contains((int)b.pos.Y)) {
+                    doomed.Add(b);
+                    b.color = ConsoleColor.White;
+                }
+            Draw();
+            
+            Thread.Sleep(300);
+            doomed.ForEach(b => placed.Remove(b));
+            Draw();
+
+            Thread.Sleep(300);
+            foreach(int y in yValues)
+                foreach(Block b in placed)
+                    if (b.pos.Y < y)
+                        b.pos.Y++;
         }
 
         static void Input() {
@@ -192,16 +224,16 @@ namespace Program {
         }
 
         public void Draw() {
-            foreach(Block block in blocks[rotation])
-                block.Draw();
+            foreach(Block b in blocks[rotation])
+                b.Draw();
         }
 
         public void Rotate(int rot) {
             rotation += rot;
             rotation = rotation < 0? 3: rotation > 3? 0: rotation;
 
-            foreach(Block block in blocks[rotation])
-                if (block.pos.Y > 19 || block.pos.X < 0 || block.pos.X > 9 || placed.Any(p => p.pos.Equals(block.pos))) {
+            foreach(Block b in blocks[rotation])
+                if (b.pos.Y > 19 || b.pos.X < 0 || b.pos.X > 9 || placed.Any(p => p.pos.Equals(b.pos))) {
                     Rotate(-rot);
                     return;
                 }
@@ -210,9 +242,9 @@ namespace Program {
         public bool UpdatePos(Vector2 offset) {
             bool collided = false;
             for (int i = 0; i < 4; i++)
-                foreach(Block block in blocks[i]) {
-                    block.pos += offset;
-                    if (i == rotation && !collided && placed.Any(p => p.pos.Equals(block.pos)))
+                foreach(Block b in blocks[i]) {
+                    b.pos += offset;
+                    if (i == rotation && !collided && placed.Any(p => p.pos.Equals(b.pos)))
                         collided = true;
                 }
             return collided;
@@ -222,7 +254,7 @@ namespace Program {
     class Block(Vector2 pos, ConsoleColor color)
     {
         public Vector2 pos = pos;
-        readonly private ConsoleColor color = color;
+        public ConsoleColor color = color;
 
         public void Draw() {
             if (pos.Y < 0) return;
