@@ -1,15 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO.Pipes;
+﻿using System.Diagnostics;
 using System.Numerics;
-using System.Reflection.Metadata;
-using System.Security.Authentication.ExtendedProtection;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Timers;
-using Microsoft.VisualBasic.FileIO;
 
 namespace Program {
     class Game {
@@ -149,10 +139,9 @@ namespace Program {
             }
         }
 
-        static void Draw() {
-            Console.Clear();
-            
+        static void Draw(bool showPreview = true) {
             // Draw frame
+            Console.Clear();
             Console.ForegroundColor = ConsoleColor.White;
             Console.SetCursorPosition(0, 0);
             Console.Write("╔════════════════════╗");
@@ -163,7 +152,20 @@ namespace Program {
             }
             Console.Write("╚════════════════════╝");
             
-            // Render game components
+            // Render piece preview
+            if (showPreview) {
+                List<Block> preview = new List<Block>();
+                foreach(Block b in piece.blocks[piece.rotation])
+                    preview.Add(new Block(b.pos, b.color));
+                while(!preview.Any(b => b.pos.Y == 20 || placed.Any(p => p.pos.Equals(b.pos))))
+                    foreach(Block b in preview)
+                        b.pos.Y++;
+                foreach(Block b in preview) {
+                    b.pos.Y--;
+                    b.Draw("░░");
+                }
+            }
+
             piece.Draw();
             foreach(Block b in placed)
                 b.Draw();
@@ -183,11 +185,11 @@ namespace Program {
                     doomed.Add(b);
                     b.color = ConsoleColor.White;
                 }
-            Draw();
+            Draw(false);
             
             Thread.Sleep(300);
             doomed.ForEach(b => placed.Remove(b));
-            Draw();
+            Draw(false);
 
             Thread.Sleep(300);
             foreach(int y in yValues)
@@ -256,11 +258,11 @@ namespace Program {
         public Vector2 pos = pos;
         public ConsoleColor color = color;
 
-        public void Draw() {
+        public void Draw(string str = "██") {
             if (pos.Y < 0) return;
             Console.SetCursorPosition((int)(1 + pos.X * 2), (int)(1 + pos.Y));
             Console.ForegroundColor = color;
-            Console.Write("██");
+            Console.Write(str);
         }
     }
 }

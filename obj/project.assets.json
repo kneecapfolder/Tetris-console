@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ilan7\\OneDrive\\Plocha\\projects\\C#\\Test\\Test.csproj",
+      "projectUniqueName": "C:\\Users\\ilan7\\OneDrive\\Plocha\\projects\\C#\\Tetris\\Test.csproj",
       "projectName": "Test",
-      "projectPath": "C:\\Users\\ilan7\\OneDrive\\Plocha\\projects\\C#\\Test\\Test.csproj",
+      "projectPath": "C:\\Users\\ilan7\\OneDrive\\Plocha\\projects\\C#\\Tetris\\Test.csproj",
       "packagesPath": "C:\\Users\\ilan7\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ilan7\\OneDrive\\Plocha\\projects\\C#\\Test\\obj\\",
+      "outputPath": "C:\\Users\\ilan7\\OneDrive\\Plocha\\projects\\C#\\Tetris\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
