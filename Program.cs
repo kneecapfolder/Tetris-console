@@ -65,10 +65,17 @@ namespace Program {
                         [ new(-1, 1), new(0, 0), new(-1, 0), new(0, -1) ]
                     ], ConsoleColor.Red
                 ));
+                shapes.Add('T', new Shape([
+                        [ new(-1, 0), new(0, 0), new(1, 0), new(0, -1) ],
+                        [ new(0, -1), new(0, 0), new(0, 1), new(1, 0) ],
+                        [ new(-1, 0), new(0, 0), new(1, 0), new(0, 1) ],
+                        [ new(0, -1), new(0, 0), new(0, 1), new(-1, 0) ]
+                    ], ConsoleColor.Magenta
+                ));
             #endregion
 
             List<Block> placed = new List<Block>();
-            Piece piece = new Piece(shapes['Z'], placed);
+            Piece piece = new Piece(shapes['T'], placed);
             Stopwatch watch = new Stopwatch();
             Random rand = new Random();
             bool drop = false;
@@ -194,9 +201,10 @@ namespace Program {
             rotation = rotation < 0? 3: rotation > 3? 0: rotation;
 
             foreach(Block block in blocks[rotation])
-                if (block.pos.Y <= 19 && block.pos.X >= 0 && block.pos.X <= 9 && !placed.Any(p => p.pos.Equals(block.pos))) return;
-
-            Rotate(-rot);
+                if (block.pos.Y > 19 || block.pos.X < 0 || block.pos.X > 9 || placed.Any(p => p.pos.Equals(block.pos))) {
+                    Rotate(-rot);
+                    return;
+                }
         }
 
         public bool UpdatePos(Vector2 offset) {
