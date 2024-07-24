@@ -2,10 +2,10 @@
 using System.Numerics;
 
 namespace Program {
-    class Game {
+    sealed class Game {
         static Dictionary<char, Shape> shapes = new Dictionary<char, Shape>();
         static ConsoleKey key;
-        static List<Block> placed;
+        static List<Block> placed = new List<Block>();
         static Shape next;
         static Piece piece;
         static int score = 0;
@@ -68,7 +68,6 @@ namespace Program {
                 ));
             #endregion
 
-            placed = new List<Block>();
             Random rand = new Random();
             next = shapes.ElementAt(rand.Next(0, shapes.Count)).Value;
             piece = new Piece(shapes.ElementAt(rand.Next(0, shapes.Count)).Value, placed);
@@ -78,13 +77,13 @@ namespace Program {
             piece.UpdatePos(new Vector2(4, 0));
             watch.Start();
 
+            Draw();
             while(key != ConsoleKey.Escape) {
                 // Input
                 Console.CursorVisible = false;
                 Thread inputThread = new Thread(Input);
                 inputThread.Start();
 
-                
                 if (!drop) switch(key) {
                     case ConsoleKey.Spacebar:
                         watch.Reset();
@@ -118,6 +117,7 @@ namespace Program {
                 }
                 key = ConsoleKey.None;
 
+
                 // Drop piece
                 if (drop || watch.Elapsed.Seconds >= 1) {
                     do {
@@ -138,7 +138,6 @@ namespace Program {
                     watch.Restart();
                 }
 
-                // Draw
                 Draw();
                 Thread.Sleep(1);
             }
@@ -181,9 +180,8 @@ namespace Program {
                 }
             }
 
-            piece.Draw();
-            foreach(Block b in placed)
-                b.Draw();
+            Block.DrawAll(piece.blocks[piece.rotation]);
+            Block.DrawAll(placed);
         }
 
         static void Complete() {
@@ -231,7 +229,7 @@ namespace Program {
         public ConsoleColor color = _color;
     }
 
-    class Piece {
+    sealed class Piece {
         // Create a copy of the jagged arr
         public Block[][] blocks = new Block[4][];
         public int rotation = 0;
@@ -245,11 +243,6 @@ namespace Program {
                 for(int j = 0; j < shape.placements[0].Length; j++)
                     blocks[i][j] = new Block(shape.placements[i][j], shape.color);
             }
-        }
-
-        public void Draw() {
-            foreach(Block b in blocks[rotation])
-                b.Draw();
         }
 
         public void Rotate(int rot) {
@@ -275,7 +268,7 @@ namespace Program {
         }
     }
 
-    class Block(Vector2 pos, ConsoleColor color)
+    sealed class Block(Vector2 pos, ConsoleColor color)
     {
         public Vector2 pos = pos;
         public ConsoleColor color = color;
@@ -285,6 +278,16 @@ namespace Program {
             Console.SetCursorPosition((int)(1 + pos.X * 2), (int)(1 + pos.Y));
             Console.ForegroundColor = color;
             Console.Write(str);
+        }
+
+        public static void DrawAll(Block[] arr) {
+            foreach(Block b in arr)
+                b.Draw();
+        }
+        
+        public static void DrawAll(List<Block> arr) {
+            foreach(Block b in arr)
+                b.Draw();
         }
     }
 }
