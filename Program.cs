@@ -8,13 +8,14 @@ namespace Program {
         static List<Block> placed = new List<Block>();
         static Shape next;
         static Piece piece;
+        static int highscore = Int32.Parse(File.ReadAllText("highscore.txt"));
         static int score = 0;
 
         public static void Main(string[] args) {
             // Setup external terminal
             Console.Title = "Tetris";
-            Console.SetWindowSize(22, 24);
-            Console.SetBufferSize(22, 24);
+            Console.SetWindowSize(22, 25);
+            Console.SetBufferSize(22, 25);
 
             #region Shapes
                 shapes.Add('I', new Shape([
@@ -141,26 +142,31 @@ namespace Program {
                 Draw();
                 Thread.Sleep(1);
             }
+            
+            if (score > highscore)
+                File.WriteAllText("highscore.txt", score.ToString());
         }
 
         static void Draw(bool showPreview = true) {
-            // Draw frame
             Console.Clear();
-            Console.ForegroundColor = ConsoleColor.White;
             Console.SetCursorPosition(0, 0);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write($"score: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(score);
+
+            // Draw frame
             Console.Write("╔════════════════════╗");
             for(int i = 1; i <= 20; i++) {
                 Console.Write('║');
-                Console.SetCursorPosition(Console.WindowWidth-1, i);
+                Console.SetCursorPosition(Console.WindowWidth-1, i+1);
                 Console.Write('║');
             }
             Console.Write("╚════════════════════╝");
 
             // Display stats
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Write($"score: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine(score);
+            Console.WriteLine($"highscore: {highscore}");
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write("next: ");
             Console.ForegroundColor = next.color;
@@ -275,7 +281,7 @@ namespace Program {
 
         public void Draw(string str = "██") {
             if (pos.Y < 0) return;
-            Console.SetCursorPosition((int)(1 + pos.X * 2), (int)(1 + pos.Y));
+            Console.SetCursorPosition((int)(1 + pos.X * 2), (int)(2 + pos.Y));
             Console.ForegroundColor = color;
             Console.Write(str);
         }
