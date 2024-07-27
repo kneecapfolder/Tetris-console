@@ -286,12 +286,7 @@ namespace Program {
             Console.Write(str);
         }
 
-        public static void DrawAll(Block[] arr) {
-            foreach(Block b in arr)
-                b.Draw();
-        }
-        
-        public static void DrawAll(List<Block> arr) {
+        public static void DrawAll(IEnumerable<Block> arr) {
             foreach(Block b in arr)
                 b.Draw();
         }
